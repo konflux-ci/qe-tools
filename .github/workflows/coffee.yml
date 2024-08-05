@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: quay.io/redhat-appstudio-qe/qe-tools:latest
+      options: --user root
 
     steps:
       - name: Check out code
