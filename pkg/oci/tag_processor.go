@@ -44,22 +44,6 @@ func (c *Controller) ProcessTag(repo, tag, creationDate string) error {
 	return c.processBlobs(outputDir)
 }
 
-// Validates the creation date of the tag
-func (c *Controller) validateCreationDate(creationDate string, since time.Duration) error {
-	parsedDate, err := time.Parse(time.RFC1123, creationDate)
-	if err != nil {
-		return fmt.Errorf("failed to parse creation date %s: %w", creationDate, err)
-	}
-	fmt.Println(time.Since(parsedDate))
-	fmt.Println(since)
-	if time.Since(parsedDate) > since {
-		fmt.Println("aaa")
-		return nil
-	}
-
-	return nil
-}
-
 // Sets up the remote repository for the given repo name
 func (c *Controller) setupRemoteRepository(repo string) (*remote.Repository, error) {
 	repoRemote, err := remote.NewRepository("quay.io/" + repo)

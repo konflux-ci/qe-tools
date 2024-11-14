@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -36,7 +35,7 @@ func createTarGzFile(t *testing.T, dest string, content map[string]string) {
 		t.Fatalf("failed to close gzip writer: %v", err)
 	}
 
-	if err := ioutil.WriteFile(dest, buf.Bytes(), 0o644); err != nil {
+	if err := os.WriteFile(dest, buf.Bytes(), 0o644); err != nil {
 		t.Fatalf("failed to write tar.gz file: %v", err)
 	}
 }
@@ -70,7 +69,7 @@ func TestExtractTarGz(t *testing.T) {
 	// Verify the contents of the extracted files
 	for filename, expectedContent := range content {
 		filePath := filepath.Join(dest, filename)
-		actualContent, err := ioutil.ReadFile(filePath)
+		actualContent, err := os.ReadFile(filePath)
 		if err != nil {
 			t.Fatalf("failed to read extracted file %s: %v", filename, err)
 		}

@@ -138,6 +138,7 @@ Examples:
 
 		// If repos is specified, simulate a download from multiple repositories
 		if len(opts.repos) > 0 {
+			var processRepos []string
 			var allErrors []error
 			for _, repo := range opts.repos {
 				if !strings.HasPrefix(repo, "quay.io/") {
@@ -146,16 +147,17 @@ Examples:
 
 				// Remove 'quay.io/' prefix
 				repo = strings.TrimPrefix(repo, "quay.io/")
+				processRepos = append(processRepos, repo)
+			}
 
-				if opts.since != "" {
-					duration, err := parseDuration(opts.since)
-					if err != nil {
-						return fmt.Errorf("invalid time format for --since: %v", err)
-					}
-					fmt.Println(duration)
-					errors := ociController.ProcessRepositories([]string{repo}, duration)
-					allErrors = append(allErrors, errors...)
+			if opts.since != "" {
+				duration, err := parseDuration(opts.since)
+				if err != nil {
+					return fmt.Errorf("invalid time format for --since: %v", err)
 				}
+				fmt.Println(processRepos)
+				errors := ociController.ProcessRepositories(processRepos, duration)
+				allErrors = append(allErrors, errors...)
 			}
 
 			if len(allErrors) > 0 {

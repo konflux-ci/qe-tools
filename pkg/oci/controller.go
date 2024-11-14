@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -78,11 +79,10 @@ func (c *Controller) ProcessRepositories(repositories []string, since time.Durat
 	errorsChan := make(chan error, len(repositories))
 
 	sem := make(chan struct{}, 10)
-
 	// Loop over each repository and process it concurrently.
 	for _, repo := range repositories {
+		fmt.Println(repo)
 		wg.Add(1)
-
 		go func(repo string) {
 			defer wg.Done()
 
@@ -124,7 +124,8 @@ func (c *Controller) processRepository(repo string, since time.Duration) error {
 
 		if time.Since(parsedDate) < since {
 			if err := c.ProcessTag(repo, tagInfo.Name, tagInfo.LastModified); err != nil {
-				return fmt.Errorf("failed to process tag %s in repository %s: %w", tagInfo.Name, repo, err)
+				// If i return error here will stop all the 'semaphores'. TODO: Find a better way of handling errors here.
+				log.Printf("failed to process tag %s in repository. Tag repo might be empty %s: %s", tagInfo.Name, repo, err.Error())
 			}
 		}
 	}
