@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 )
 
 // Constants for OCI API configuration
@@ -61,10 +62,20 @@ func (c *Controller) buildTagsURL(repo string, page int) string {
 
 // sendTagsRequest sends a GET request to the provided URL and decodes the response into a TagResponse struct.
 // It returns an error if the request fails or if the response cannot be decoded.
-func (c *Controller) sendTagsRequest(url string) (*TagResponse, error) {
-	resp, err := http.Get(url)
+func (c *Controller) sendTagsRequest(urlStr string) (*TagResponse, error) {
+	parsedURL, err := url.Parse(urlStr) // Use url.Parse instead of urlStr.Parse
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch tags from URL %s: %w", url, err)
+		return nil, fmt.Errorf("invalid URL %s: %w", urlStr, err)
+	}
+
+	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
+		return nil, fmt.Errorf("unsupported URL scheme %s in URL %s", parsedURL.Scheme, urlStr)
+	}
+
+	// Perform the HTTP GET request
+	resp, err := http.Get(parsedURL.String())
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch tags from URL %s: %w", urlStr, err)
 	}
 	defer resp.Body.Close()
 

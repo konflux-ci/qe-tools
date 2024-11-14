@@ -22,13 +22,8 @@ const (
 	blobTimeout = 2 * time.Minute
 )
 
-// Processes individual tags from a given repository
-func (c *Controller) ProcessTag(repo, tag, creationDate string, since time.Duration) error {
-
-	if err := c.validateCreationDate(creationDate, since); err != nil {
-		return err
-	}
-
+// ProcessTag processes individual tags from a given repository
+func (c *Controller) ProcessTag(repo, tag, creationDate string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), blobTimeout)
 	defer cancel()
 
@@ -42,7 +37,7 @@ func (c *Controller) ProcessTag(repo, tag, creationDate string, since time.Durat
 	}
 
 	outputDir := c.createOutputDirectory(repo, creationDate, tag)
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
+	if err := os.MkdirAll(outputDir, 0o750); err != nil {
 		return fmt.Errorf("failed to create output directory %s: %w", outputDir, err)
 	}
 
@@ -55,8 +50,10 @@ func (c *Controller) validateCreationDate(creationDate string, since time.Durati
 	if err != nil {
 		return fmt.Errorf("failed to parse creation date %s: %w", creationDate, err)
 	}
-
+	fmt.Println(time.Since(parsedDate))
+	fmt.Println(since)
 	if time.Since(parsedDate) > since {
+		fmt.Println("aaa")
 		return nil
 	}
 

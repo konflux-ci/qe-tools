@@ -29,16 +29,16 @@ type Controller struct {
 }
 
 // NewController initializes a new Controller instance with the specified output and OCI store path.
-func NewController(outputDir string, OCIStorePath string) (*Controller, error) {
-	store, err := oci.New(OCIStorePath)
+func NewController(outputDir string, ociStorePath string) (*Controller, error) {
+	store, err := oci.New(ociStorePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize OCI store at path %s: %w", OCIStorePath, err)
+		return nil, fmt.Errorf("failed to initialize OCI store at path %s: %w", ociStorePath, err)
 	}
 
 	return &Controller{
 		OutputDir:    outputDir,
-		BlobDir:      OCIStorePath + "/blobs/sha256/",
-		OCIStorePath: OCIStorePath,
+		BlobDir:      ociStorePath + "/blobs/sha256/",
+		OCIStorePath: ociStorePath,
 		Store:        store,
 	}, nil
 }
@@ -117,8 +117,15 @@ func (c *Controller) processRepository(repo string, since time.Duration) error {
 
 	// Process each tag within the repository.
 	for _, tagInfo := range tags {
-		if err := c.ProcessTag(repo, tagInfo.Name, tagInfo.LastModified, since); err != nil {
-			return fmt.Errorf("failed to process tag %s in repository %s: %w", tagInfo.Name, repo, err)
+		parsedDate, err := time.Parse(time.RFC1123, tagInfo.LastModified)
+		if err != nil {
+			return fmt.Errorf("failed to parse creation date %s: %w", tagInfo.LastModified, err)
+		}
+
+		if time.Since(parsedDate) < since {
+			if err := c.ProcessTag(repo, tagInfo.Name, tagInfo.LastModified); err != nil {
+				return fmt.Errorf("failed to process tag %s in repository %s: %w", tagInfo.Name, repo, err)
+			}
 		}
 	}
 

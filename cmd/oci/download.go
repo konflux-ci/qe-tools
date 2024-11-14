@@ -75,7 +75,9 @@ Examples:
 
 		// If neither 'repo' nor 'repos' is provided, show command-specific help
 		if opts.repo == "" && len(opts.repos) == 0 {
-			cmd.Help()
+			if err := cmd.Help(); err != nil {
+				return fmt.Errorf("failed to display help: %w", err)
+			}
 			return fmt.Errorf("either --repo or --repos must be specified")
 		}
 
@@ -94,7 +96,7 @@ Examples:
 		}
 
 		// Create the cache directory if it doesn't exist
-		if err := os.MkdirAll(opts.ociCache, os.ModePerm); err != nil {
+		if err := os.MkdirAll(opts.ociCache, 0o750); err != nil {
 			return fmt.Errorf("could not create cache directory: %v", err)
 		}
 
@@ -120,7 +122,7 @@ Examples:
 			}
 
 			// Call ProcessTag to get details of the tag (implement as needed)
-			if err := ociController.ProcessTag(repo, tag, time.Now().Format(time.RFC1123), time.Duration(0)); err != nil {
+			if err := ociController.ProcessTag(repo, tag, time.Now().Format(time.RFC1123)); err != nil {
 				return fmt.Errorf("failed to fetch tag: %v", err)
 			}
 		}
@@ -150,6 +152,7 @@ Examples:
 					if err != nil {
 						return fmt.Errorf("invalid time format for --since: %v", err)
 					}
+					fmt.Println(duration)
 					errors := ociController.ProcessRepositories([]string{repo}, duration)
 					allErrors = append(allErrors, errors...)
 				}

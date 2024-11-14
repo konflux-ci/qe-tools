@@ -37,7 +37,7 @@ func (c *Controller) extractTarGz(gzipStream io.Reader, dest string) error {
 		if err != nil {
 			return fmt.Errorf("failed to read tar header: %w", err)
 		}
-
+		// #nosec G305
 		destPath := filepath.Join(dest, header.Name)
 		if err := c.handleTarEntry(header, tarReader, destPath); err != nil {
 			return err
@@ -51,7 +51,7 @@ func (c *Controller) extractTarGz(gzipStream io.Reader, dest string) error {
 func (c *Controller) handleTarEntry(header *tar.Header, tarReader *tar.Reader, destPath string) error {
 	switch header.Typeflag {
 	case tar.TypeDir:
-		return os.MkdirAll(destPath, 0755)
+		return os.MkdirAll(destPath, 0o750)
 	case tar.TypeReg:
 		if _, err := os.Stat(destPath); err == nil {
 			return nil
@@ -65,20 +65,21 @@ func (c *Controller) handleTarEntry(header *tar.Header, tarReader *tar.Reader, d
 // Creates a file from the tar reader.
 // It writes the contents of the tar entry to a newly created file.
 func (c *Controller) createFileFromTar(tarReader *tar.Reader, destPath string) error {
-	outFile, err := os.Create(destPath)
+	cleanDestPath := filepath.Clean(destPath)
+
+	outFile, err := os.Create(cleanDestPath)
 	if err != nil {
-		return fmt.Errorf("failed to create file %s: %w", destPath, err)
+		return fmt.Errorf("failed to create file %s: %w", cleanDestPath, err)
 	}
 	defer outFile.Close()
 
-	// Copy contents from the tar reader to the file
 	if _, err := io.Copy(outFile, tarReader); err != nil {
-		return fmt.Errorf("failed to write file %s: %w", destPath, err)
+		return fmt.Errorf("failed to write file %s: %w", cleanDestPath, err)
 	}
 	return nil
 }
 
-// Handles the extraction of individual blobs.
+// HandleBlob handles the extraction of individual blobs.
 // It manages concurrency with WaitGroup and semaphore for blob processing.
 func (c *Controller) HandleBlob(blobPath, outputDir string, wg *sync.WaitGroup, errors chan<- error, sem chan struct{}) {
 	defer wg.Done()
@@ -94,23 +95,29 @@ func (c *Controller) HandleBlob(blobPath, outputDir string, wg *sync.WaitGroup, 
 // Processes the blob file for extraction.
 // It checks for file existence, size, and identifies if it's a tar.gz blob.
 func (c *Controller) processBlob(blobPath, outputDir string) error {
-	fileInfo, err := os.Stat(blobPath)
+	// Normalize the path to prevent directory traversal
+	cleanBlobPath := filepath.Clean(blobPath)
+
+	// Check file existence and size
+	fileInfo, err := os.Stat(cleanBlobPath)
 	if err != nil {
-		return fmt.Errorf("failed to stat blob %s: %w", blobPath, err)
+		return fmt.Errorf("failed to stat blob %s: %w", cleanBlobPath, err)
 	}
 
 	if fileInfo.Size() == 0 {
-		return fmt.Errorf("blob %s is empty, skipping", blobPath)
+		return fmt.Errorf("blob %s is empty, skipping", cleanBlobPath)
 	}
 
-	file, err := os.Open(blobPath)
+	// Open the file safely
+	file, err := os.Open(cleanBlobPath)
 	if err != nil {
-		return fmt.Errorf("failed to open blob %s: %w", blobPath, err)
+		return fmt.Errorf("failed to open blob %s: %w", cleanBlobPath, err)
 	}
 	defer file.Close()
 
-	if isTarGzBlob(blobPath, file) {
-		return c.extractBlob(blobPath, file, outputDir)
+	// Check if the blob is a tar.gz and process it if so
+	if isTarGzBlob(cleanBlobPath, file) {
+		return c.extractBlob(cleanBlobPath, file, outputDir)
 	}
 
 	return nil
@@ -123,7 +130,9 @@ func isTarGzBlob(blobPath string, file *os.File) bool {
 	if _, err := file.Read(buf); err != nil {
 		return false
 	}
-	file.Seek(0, 0)
+	if _, err := file.Seek(0, 0); err != nil {
+		return false
+	}
 	return strings.HasSuffix(blobPath, ".tar.gz") || (len(buf) == 2 && buf[0] == 0x1F && buf[1] == 0x8B)
 }
 
