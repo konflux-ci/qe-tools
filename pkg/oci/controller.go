@@ -81,7 +81,6 @@ func (c *Controller) ProcessRepositories(repositories []string, since time.Durat
 	sem := make(chan struct{}, 10)
 	// Loop over each repository and process it concurrently.
 	for _, repo := range repositories {
-		fmt.Println(repo)
 		wg.Add(1)
 		go func(repo string) {
 			defer wg.Done()
