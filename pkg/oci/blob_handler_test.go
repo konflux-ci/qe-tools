@@ -43,7 +43,7 @@ func createTarGzFile(t *testing.T, dest string, content map[string]string) {
 // Test extractTarGz method
 func TestExtractTarGz(t *testing.T) {
 	dest := t.TempDir() // Temporary directory for extraction
-	tarGzFile := filepath.Join(dest, "test.tar.gz")
+	tarGzFile := filepath.Join(dest, "test.gz")
 
 	content := map[string]string{
 		"file1.txt": "This is the content of file1.",

@@ -40,6 +40,9 @@ type downloadOptions struct {
 	// noCache determines whether to remove the OCI cache after downloading artifacts.
 	// If true, the cache will be deleted after the command execution completes, regardless of success or failure.
 	noCache bool
+
+	// uncompressGzFiles will extract all the .gz files from the oci artifacts
+	uncompressGzFiles bool
 }
 
 var opts = &downloadOptions{}
@@ -155,7 +158,6 @@ Examples:
 				if err != nil {
 					return fmt.Errorf("invalid time format for --since: %v", err)
 				}
-				fmt.Println(processRepos)
 				errors := ociController.ProcessRepositories(processRepos, duration)
 				allErrors = append(allErrors, errors...)
 			}
@@ -164,6 +166,24 @@ Examples:
 				log.Println("Errors encountered during processing:")
 				for _, err := range allErrors {
 					log.Printf(" - %v\n", err)
+				}
+			}
+		}
+
+		if opts.uncompressGzFiles {
+			gzFilesFromOciArtifacts, err := ociController.GetGzFilesFromDir(opts.artifactsOutput)
+			if err != nil {
+				return fmt.Errorf("failed to extract gz files from artifacts folder: %w", err)
+			}
+
+			for _, file := range gzFilesFromOciArtifacts {
+				err := ociController.ExtractGzFile(file.FilePath, file.DirPath)
+				if err != nil {
+					log.Printf("warn: file %s was not extracted successfully: %s", file.FilePath, err.Error())
+				}
+
+				if err := os.Remove(file.FilePath); err != nil {
+					log.Printf("failed to remove gz file - %v\n", err)
 				}
 			}
 		}
@@ -217,31 +237,7 @@ func Init() *cobra.Command {
 	downloadCmd.Flags().StringVar(&opts.ociCache, "oci-cache", "", "Directory where OCI artifacts will be cached (default: $HOME/.config/qe-tools/cache)")
 	downloadCmd.Flags().StringVar(&opts.artifactsOutput, "artifacts-output", "", "Mandatory path to store downloaded artifacts")
 	downloadCmd.Flags().BoolVar(&opts.noCache, "no-cache", true, "If true, removes the OCI cache after downloading artifacts")
-
-	// Custom Help function for the download command
-	downloadCmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
-		fmt.Println(`
-Download artifacts from OCI storage using either a single repository or multiple repositories.
-
-Usage:
-  qe-tools download [flags]
-
-Available Flags:
-  --repo             Single OCI repository to download from (e.g., quay.io/test/test:1.0)
-  --repos            Multiple OCI repositories to download from (use with --since)
-  --since            Time range to download the latest artifacts (e.g., 4h, 10m, 2d)
-  --oci-cache        Directory where OCI artifacts will be cached (default: $HOME/.config/qe-tools/cache)
-  --artifacts-output Mandatory path to store downloaded artifacts
-  --no-cache         If true, removes the OCI cache after downloading artifacts
-
-Examples:
-  Download from a single repository:
-    qe-tools download --repo quay.io/test/test:1.0 --artifacts-output /path/to/output
-
-  Download from multiple repositories within the last 2 days:
-    qe-tools download --repos quay.io/repo1 quay.io/repo2 --since 2d --artifacts-output /path/to/output
-	`)
-	})
+	downloadCmd.Flags().BoolVar(&opts.uncompressGzFiles, "uncompress-gz-files", true, "If true, uncompresses all gzipped files from the OCI artifacts after download.")
 
 	return downloadCmd
 }

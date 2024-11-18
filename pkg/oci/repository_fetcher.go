@@ -21,6 +21,9 @@ type TagInfo struct {
 
 	// The date and time when the tag was last modified
 	LastModified string `json:"last_modified"`
+
+	// The size of the oci container.
+	Size int64 `json:"size"`
 }
 
 // TagResponse is used to decode the JSON response from the Quay API that contains a list of tags.
@@ -38,6 +41,7 @@ func (c *Controller) FetchTags(repo string) ([]TagInfo, error) {
 
 	for {
 		url := c.buildTagsURL(repo, page)
+
 		response, err := c.sendTagsRequest(url)
 		if err != nil {
 			return nil, err
