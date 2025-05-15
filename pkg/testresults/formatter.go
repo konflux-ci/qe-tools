@@ -4,7 +4,10 @@ import (
 	"fmt"
 )
 
-const dropdownSummaryString = "Click to view logs"
+const (
+	dropdownSummaryString = "Click to view logs"
+	maxContentChars       = 10000
+)
 
 // extractFailedTestCasesBody initialises the FailedTestCasesReport struct's
 // 'failedTestCaseNames' field with the names of failed test cases
@@ -64,5 +67,15 @@ func GetFormattedReport(report FailedTestCasesReport) (formattedReport string) {
 }
 
 func returnContentWrappedInDropdown(summary, content string) string {
-	return "<details><summary>" + summary + "</summary><br><pre>" + content + "</pre></details>\n\n---"
+	return "<details><summary>" + summary + "</summary><br><pre>" + returnTruncatedContent(content) + "</pre></details>\n\n---"
+}
+
+func returnTruncatedContent(content string) string {
+	if len(content) > maxContentChars {
+		runes := []rune(content)
+		truncatedRunes := runes[:maxContentChars]
+
+		return string(truncatedRunes) + "... the content is too long - please download the artifact to see the full content\n"
+	}
+	return content
 }
