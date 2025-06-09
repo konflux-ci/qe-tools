@@ -6,10 +6,10 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
 	"oras.land/oras-go/v2"
+	"oras.land/oras-go/v2/content/file"
 	"oras.land/oras-go/v2/content/oci"
 	"oras.land/oras-go/v2/registry/remote"
 	"oras.land/oras-go/v2/registry/remote/auth"
@@ -41,7 +41,23 @@ func (c *Controller) ProcessTag(repo, tag, creationDate string) error {
 		return fmt.Errorf("failed to create output directory %s: %w", outputDir, err)
 	}
 
-	return c.processBlobs(outputDir)
+	return c.ociCopy(repoRemote, tag, outputDir)
+}
+
+func (c *Controller) ociCopy(repo *remote.Repository, tag string, outputDir string) error {
+	dst, err := file.New(outputDir)
+	if err != nil {
+		log.Fatalf("Failed to create file store: %v", err)
+	}
+
+	defer dst.Close()
+
+	_, err = oras.Copy(context.Background(), repo, tag, dst, tag, oras.DefaultCopyOptions)
+	if err != nil {
+		return fmt.Errorf("failed to pull artifact using oras.Copy: %v", err)
+	}
+
+	return err
 }
 
 // Sets up the remote repository for the given repo name
@@ -77,33 +93,4 @@ func (c *Controller) copyTagManifest(ctx context.Context, repoRemote *remote.Rep
 func (c *Controller) createOutputDirectory(repo, creationDate, tag string) string {
 	parsedDate, _ := time.Parse(time.RFC1123, creationDate)
 	return filepath.Join(c.OutputDir, repo, parsedDate.Format("2006-01-02"), tag)
-}
-
-// Processes the blobs by handling individual blob files
-func (c *Controller) processBlobs(outputDir string) error {
-	var wg sync.WaitGroup
-	errors := make(chan error, 10)
-	sem := make(chan struct{}, 10)
-
-	entries, err := os.ReadDir(c.BlobDir)
-	if err != nil {
-		return fmt.Errorf("failed to read blob directory: %w", err)
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		wg.Add(1)
-		go c.HandleBlob(filepath.Join(c.BlobDir, entry.Name()), outputDir, &wg, errors, sem)
-	}
-
-	wg.Wait()
-	close(errors)
-
-	for err := range errors {
-		log.Println("Error:", err)
-	}
-
-	return nil
 }
