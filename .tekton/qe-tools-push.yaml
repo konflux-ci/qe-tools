@@ -23,7 +23,7 @@ spec:
   - name: revision
     value: '{{revision}}'
   - name: output-image
-    value: quay.io/redhat-user-workloads/rh-konflux-devprod-tenant/qe-tools:{{revision}}
+    value: quay.io/konflux-ci/qe-tools:{{revision}}
   - name: dockerfile
     value: Dockerfile
   pipelineSpec:
