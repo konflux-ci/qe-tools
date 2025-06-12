@@ -1,5 +1,7 @@
 FROM registry.access.redhat.com/ubi9/go-toolset:1.21.10 AS builder
 
+LABEL konflux.additional-tags="latest"
+
 COPY go.mod go.mod
 COPY go.sum go.sum
 
