@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	cloud.google.com/go/storage v1.38.0
-	github.com/GoogleCloudPlatform/testgrid v0.0.170
+	github.com/GoogleCloudPlatform/testgrid v0.0.174
 	github.com/bsm/ginkgo/v2 v2.12.0
 	github.com/daixiang0/gci v0.13.1
 	github.com/go-critic/go-critic v0.11.1
