@@ -1,0 +1,1 @@
+../../skills/adding-a-subcommand/SKILL.md
