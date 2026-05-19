@@ -3,3 +3,4 @@ vendor/
 coverage.out
 tmp
 analysis.md
+.agentready/

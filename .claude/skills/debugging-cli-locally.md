@@ -1,0 +1,1 @@
+../../skills/debugging-cli-locally/SKILL.md
