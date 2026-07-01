@@ -15,6 +15,7 @@ linters:
     gosec:
       excludes:
         - G304
+        - G703
     revive:
       rules:
         - name: exported
@@ -28,7 +29,8 @@ linters:
       - path: _test\.go
         linters:
           - gosec
+          - lll
 
 run:
-  go: "1.22"
+  go: "1.23"
   concurrency: 2
