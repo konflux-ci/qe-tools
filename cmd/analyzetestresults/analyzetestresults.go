@@ -65,7 +65,10 @@ var AnalyzeTestResultsCmd = &cobra.Command{
 func init() {
 	AnalyzeTestResultsCmd.Flags().StringVar(&ociArtifactRef, types.OciArtifactRefParamName, "", "OCI artifact reference (e.g. \"quay.io/org/repo:oci-artifact-tag\")")
 	AnalyzeTestResultsCmd.Flags().StringVar(&jUnitFilename, types.JUnitFilenameParamName, "e2e-report.xml", "A name of the file containing JUnit report")
-	AnalyzeTestResultsCmd.Flags().StringVar(&clusterProvisionLogFilename, types.ClusterProvisionLogFileParamName, "cluster-provision.log", "A name of the file containing log from provisioning a testing cluster")
+	AnalyzeTestResultsCmd.Flags().StringVar(
+		&clusterProvisionLogFilename, types.ClusterProvisionLogFileParamName,
+		"cluster-provision.log", "A name of the file containing log from provisioning a testing cluster",
+	)
 	AnalyzeTestResultsCmd.Flags().StringVar(&e2eTestRunLogFilename, types.E2ETestRunLogFileParamName, "e2e-tests.log", "A name of the file containing log from running tests")
 	AnalyzeTestResultsCmd.Flags().StringVar(&outputFilename, types.OutputFilenameParamName, "analysis.md", "A name of the file to store the analysis output in")
 

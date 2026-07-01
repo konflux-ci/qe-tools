@@ -189,7 +189,11 @@ func buildPRMessage(hcStatus *HealthCheckStatus, failIfUnhealthy bool) string {
 
 func init() {
 	healthCheckCmd.Flags().BoolVar(&failIfUnhealthy, failIfUnhealthyParamName, false, "Exit with non-zero code if critical issues were found")
-	healthCheckCmd.Flags().BoolVar(&notifyOnPR, notifyOnPRParamName, false, fmt.Sprintf("Create a comment in a related PR if critical issues were found (required env vars: %+v)", strings.Join(healthCheckNotifyRequiredEnvVars, ", ")))
+	healthCheckCmd.Flags().BoolVar(
+		&notifyOnPR, notifyOnPRParamName, false,
+		fmt.Sprintf("Create a comment in a related PR if critical issues were found (required env vars: %+v)",
+			strings.Join(healthCheckNotifyRequiredEnvVars, ", ")),
+	)
 
 	_ = viper.BindPFlag(types.ArtifactDirParamName, healthCheckCmd.Flags().Lookup(types.ArtifactDirParamName))
 	_ = viper.BindPFlag(failIfUnhealthyParamName, healthCheckCmd.Flags().Lookup(failIfUnhealthyParamName))

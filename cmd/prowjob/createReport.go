@@ -85,7 +85,12 @@ var createReportCmd = &cobra.Command{
 			for artifactFilename, artifact := range artifactsFilenameMap {
 				if artifactFilename == finishedFilename {
 					if strings.Contains(string(stepName), "gather") {
-						openshiftCiJunit.Properties.Properties = append(openshiftCiJunit.Properties.Properties, reporters.JUnitProperty{Name: string(stepName), Value: gcsBrowserURLPrefix + strings.TrimSuffix(artifact.FullName, finishedFilename) + "artifacts"})
+						openshiftCiJunit.Properties.Properties = append(
+							openshiftCiJunit.Properties.Properties,
+							reporters.JUnitProperty{
+								Name:  string(stepName),
+								Value: gcsBrowserURLPrefix + strings.TrimSuffix(artifact.FullName, finishedFilename) + "artifacts",
+							})
 					}
 
 					finished := metadata.Finished{}
@@ -100,7 +105,9 @@ var createReportCmd = &cobra.Command{
 					}
 
 					if *finished.Passed {
-						openshiftCiJunit.TestCases = append(openshiftCiJunit.TestCases, reporters.JUnitTestCase{Name: string(stepName), Status: ginkgoTypes.SpecStatePassed.String(), SystemErr: buildLog})
+						openshiftCiJunit.TestCases = append(openshiftCiJunit.TestCases, reporters.JUnitTestCase{
+							Name: string(stepName), Status: ginkgoTypes.SpecStatePassed.String(), SystemErr: buildLog,
+						})
 					} else {
 						failure := &reporters.JUnitFailure{Message: fmt.Sprintf("%s has failed", stepName)}
 						tc := reporters.JUnitTestCase{Name: string(stepName), Status: ginkgoTypes.SpecStateFailed.String(), Failure: failure, SystemErr: buildLog}
