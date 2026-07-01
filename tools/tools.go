@@ -11,7 +11,6 @@ package tools
 //go:generate go install golang.org/x/lint/golint
 //go:generate go install github.com/go-critic/go-critic/cmd/gocritic
 //go:generate go install honnef.co/go/tools/cmd/staticcheck
-//go:generate go install github.com/orijtech/structslop/cmd/structslop
 //go:generate go install github.com/mgechev/revive
 //go:generate go install github.com/securego/gosec/v2/cmd/gosec
 //go:generate go install github.com/sqs/goreturns
@@ -31,8 +30,6 @@ import (
 	_ "mvdan.cc/gofumpt"
 	// go-staticcheck
 	_ "honnef.co/go/tools/cmd/staticcheck"
-	// go-structslop
-	_ "github.com/orijtech/structslop/cmd/structslop"
 	// go-revive
 	_ "github.com/mgechev/revive"
 	// go-sec
