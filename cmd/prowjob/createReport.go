@@ -77,7 +77,7 @@ var createReportCmd = &cobra.Command{
 
 		overallJUnitSuites, err := buildJUnitFromArtifacts(scanner)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to build JUnit from artifacts: %w", err)
 		}
 
 		artifactDir := viper.GetString(types.ArtifactDirParamName)
