@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/konflux-ci/qe-tools/pkg/prow"
-	ginkgoTypes "github.com/onsi/ginkgo/v2/types"
 )
 
 func TestBuildJUnitFromArtifacts_PassedStep(t *testing.T) {
@@ -44,7 +43,7 @@ func TestBuildJUnitFromArtifacts_PassedStep(t *testing.T) {
 			for _, tc := range suite.TestCases {
 				if tc.Name == "e2e-tests" {
 					found = true
-					if tc.Status != ginkgoTypes.SpecStatePassed.String() {
+					if tc.Status != "passed" {
 						t.Errorf("expected status 'passed', got %q", tc.Status)
 					}
 					if tc.SystemErr != "" {
@@ -92,7 +91,7 @@ func TestBuildJUnitFromArtifacts_FailedStep(t *testing.T) {
 		if suite.Name == openshiftCITestSuiteName {
 			for _, tc := range suite.TestCases {
 				if tc.Name == "integration-tests" {
-					if tc.Status != ginkgoTypes.SpecStateFailed.String() {
+					if tc.Status != "failed" {
 						t.Errorf("expected status 'failed', got %q", tc.Status)
 					}
 					if tc.Failure == nil {
