@@ -1,6 +1,6 @@
 qe-tools
 vendor/
-coverage.out
+coverage*.out
 tmp
 analysis.md
 .agentready/

@@ -292,7 +292,8 @@ func determineJobTargetFromProwJobURL(prowJobURL string) (jobTarget string, err 
 }
 
 func getArtifactsDirectoryPrefix(artifactScanner *ArtifactScanner, prowJobURL, jobTarget string) (string, error) {
-	// => e.g. [ "https://prow.ci.openshift.org/view/gs", "pr-logs/pull/redhat-appstudio_infra-deployments/123/pull-ci-redhat-appstudio-infra-deployments-main-appstudio-e2e-tests/123" ]
+	// e.g. [ "https://prow.ci.openshift.org/view/gs",
+	//   "pr-logs/pull/redhat-appstudio_infra-deployments/123/pull-ci-...-main-appstudio-e2e-tests/123" ]
 	sp := strings.Split(prowJobURL, "/"+bucketName+"/")
 	if len(sp) != 2 {
 		return "", fmt.Errorf("failed to determine artifact directory's prefix - prow job url: '%s', bucket name: '%s'", prowJobURL, bucketName)

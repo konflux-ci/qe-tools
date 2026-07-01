@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -35,8 +36,8 @@ func removeANSIEscapeSequences(text string) string {
 }
 
 func fetchTextContent(url string) (string, error) {
-	// #nosec G107
-	resp, err := http.Get(url)
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Get(url) // #nosec G107,G704 -- URL comes from viper config, not user input
 	if err != nil {
 		return "", fmt.Errorf("error fetching the webpage: %w", err)
 	}
