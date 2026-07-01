@@ -42,3 +42,23 @@ jobs:
           flags: unit-tests
           files: coverage.out
           fail_ci_if_error: false
+
+  e2e-coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Run e2e coverage tests
+        run: make test-e2e-cover
+
+      - name: Upload e2e coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: e2e-tests
+          files: coverage-e2e.out
+          fail_ci_if_error: false
