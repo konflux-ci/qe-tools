@@ -43,6 +43,13 @@ PHONY: lint
 lint: ## lint go files
 	golangci-lint run
 
+.PHONY: test-e2e-cover
+test-e2e-cover: ## run e2e tests with coverage instrumentation
+	@rm -rf ./tmp/covdata && mkdir -p ./tmp/covdata
+	go test -v -tags=e2e ./test/e2e/...
+	go tool covdata textfmt -i=./tmp/covdata -o=coverage-e2e.out
+	@echo "E2E coverage written to coverage-e2e.out"
+
 .PHONY: pre-commit
 pre-commit:	## run pre-commit hooks
 	pre-commit run --all-files
