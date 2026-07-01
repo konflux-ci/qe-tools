@@ -75,52 +75,9 @@ var createReportCmd = &cobra.Command{
 			return fmt.Errorf("failed to scan artifacts for prow job %s: %+v", prowJobID, err)
 		}
 
-		overallJUnitSuites := &reporters.JUnitTestSuites{}
-		openshiftCiJunit := reporters.JUnitTestSuite{Name: openshiftCITestSuiteName, Properties: reporters.JUnitProperties{Properties: []reporters.JUnitProperty{}}}
-
-		htmlReportLink := gcsBrowserURLPrefix + scanner.ArtifactDirectoryPrefix + "redhat-appstudio-report/artifacts/junit-summary.html"
-		openshiftCiJunit.Properties.Properties = append(openshiftCiJunit.Properties.Properties, reporters.JUnitProperty{Name: "html-report-link", Value: htmlReportLink})
-
-		for stepName, artifactsFilenameMap := range scanner.ArtifactStepMap {
-			for artifactFilename, artifact := range artifactsFilenameMap {
-				if artifactFilename == finishedFilename {
-					if strings.Contains(string(stepName), "gather") {
-						openshiftCiJunit.Properties.Properties = append(
-							openshiftCiJunit.Properties.Properties,
-							reporters.JUnitProperty{
-								Name:  string(stepName),
-								Value: gcsBrowserURLPrefix + strings.TrimSuffix(artifact.FullName, finishedFilename) + "artifacts",
-							})
-					}
-
-					finished := metadata.Finished{}
-					err = yaml.Unmarshal([]byte(artifact.Content), &finished)
-					if err != nil {
-						return fmt.Errorf("cannot unmarshal %s into finished struct: %+v", artifact.Content, err)
-					}
-
-					var buildLog string
-					if val, ok := artifactsFilenameMap[buildLogFilename]; ok {
-						buildLog = val.Content
-					}
-
-					if *finished.Passed {
-						openshiftCiJunit.TestCases = append(openshiftCiJunit.TestCases, reporters.JUnitTestCase{
-							Name: string(stepName), Status: ginkgoTypes.SpecStatePassed.String(), SystemErr: buildLog,
-						})
-					} else {
-						failure := &reporters.JUnitFailure{Message: fmt.Sprintf("%s has failed", stepName)}
-						tc := reporters.JUnitTestCase{Name: string(stepName), Status: ginkgoTypes.SpecStateFailed.String(), Failure: failure, SystemErr: buildLog}
-						openshiftCiJunit.Failures++
-						openshiftCiJunit.TestCases = append(openshiftCiJunit.TestCases, tc)
-					}
-					openshiftCiJunit.Tests++
-				} else if strings.Contains(string(artifactFilename), ".xml") {
-					if err = xml.Unmarshal([]byte(artifact.Content), overallJUnitSuites); err != nil {
-						klog.Errorf("cannot decode JUnit suite %q into xml: %+v", artifactFilename, err)
-					}
-				}
-			}
+		overallJUnitSuites, err := buildJUnitFromArtifacts(scanner)
+		if err != nil {
+			return err
 		}
 
 		artifactDir := viper.GetString(types.ArtifactDirParamName)
@@ -131,28 +88,6 @@ var createReportCmd = &cobra.Command{
 
 		if err := os.MkdirAll(artifactDir, 0o750); err != nil {
 			return fmt.Errorf("failed to create directory for results '%s': %+v", artifactDir, err)
-		}
-
-		// Add timestamp to openshift-ci job
-		if len(overallJUnitSuites.TestSuites) > 0 {
-			openshiftCiJunit.Timestamp = overallJUnitSuites.TestSuites[0].Timestamp
-		} else {
-			openshiftCiJunit.Timestamp = time.Now().Format("2006-01-02T15:04:05")
-		}
-
-		overallJUnitSuites.TestSuites = append(overallJUnitSuites.TestSuites, openshiftCiJunit)
-		overallJUnitSuites.Failures += openshiftCiJunit.Failures
-		overallJUnitSuites.Errors += openshiftCiJunit.Errors
-		overallJUnitSuites.Tests += openshiftCiJunit.Tests
-
-		// Omit system-err from passed test cases
-		for i := range overallJUnitSuites.TestSuites {
-			for j := range overallJUnitSuites.TestSuites[i].TestCases {
-				tc := &overallJUnitSuites.TestSuites[i].TestCases[j]
-				if tc.Status == "passed" {
-					tc.SystemErr = ""
-				}
-			}
 		}
 
 		generatedJunitFilepath := filepath.Clean(artifactDir + "/junit.xml")
@@ -198,6 +133,81 @@ var createReportCmd = &cobra.Command{
 
 		return nil
 	},
+}
+
+func buildJUnitFromArtifacts(scanner *prow.ArtifactScanner) (*reporters.JUnitTestSuites, error) {
+	overallJUnitSuites := &reporters.JUnitTestSuites{}
+	openshiftCiJunit := reporters.JUnitTestSuite{
+		Name:       openshiftCITestSuiteName,
+		Properties: reporters.JUnitProperties{Properties: []reporters.JUnitProperty{}},
+	}
+
+	htmlReportLink := gcsBrowserURLPrefix + scanner.ArtifactDirectoryPrefix + "redhat-appstudio-report/artifacts/junit-summary.html"
+	openshiftCiJunit.Properties.Properties = append(openshiftCiJunit.Properties.Properties, reporters.JUnitProperty{Name: "html-report-link", Value: htmlReportLink})
+
+	for stepName, artifactsFilenameMap := range scanner.ArtifactStepMap {
+		for artifactFilename, artifact := range artifactsFilenameMap {
+			if artifactFilename == finishedFilename {
+				if strings.Contains(string(stepName), "gather") {
+					openshiftCiJunit.Properties.Properties = append(
+						openshiftCiJunit.Properties.Properties,
+						reporters.JUnitProperty{
+							Name:  string(stepName),
+							Value: gcsBrowserURLPrefix + strings.TrimSuffix(artifact.FullName, finishedFilename) + "artifacts",
+						})
+				}
+
+				finished := metadata.Finished{}
+				err := yaml.Unmarshal([]byte(artifact.Content), &finished)
+				if err != nil {
+					return nil, fmt.Errorf("cannot unmarshal %s into finished struct: %+v", artifact.Content, err)
+				}
+
+				var buildLog string
+				if val, ok := artifactsFilenameMap[buildLogFilename]; ok {
+					buildLog = val.Content
+				}
+
+				if *finished.Passed {
+					openshiftCiJunit.TestCases = append(openshiftCiJunit.TestCases, reporters.JUnitTestCase{
+						Name: string(stepName), Status: ginkgoTypes.SpecStatePassed.String(), SystemErr: buildLog,
+					})
+				} else {
+					failure := &reporters.JUnitFailure{Message: fmt.Sprintf("%s has failed", stepName)}
+					tc := reporters.JUnitTestCase{Name: string(stepName), Status: ginkgoTypes.SpecStateFailed.String(), Failure: failure, SystemErr: buildLog}
+					openshiftCiJunit.Failures++
+					openshiftCiJunit.TestCases = append(openshiftCiJunit.TestCases, tc)
+				}
+				openshiftCiJunit.Tests++
+			} else if strings.Contains(string(artifactFilename), ".xml") {
+				if err := xml.Unmarshal([]byte(artifact.Content), overallJUnitSuites); err != nil {
+					klog.Errorf("cannot decode JUnit suite %q into xml: %+v", artifactFilename, err)
+				}
+			}
+		}
+	}
+
+	if len(overallJUnitSuites.TestSuites) > 0 {
+		openshiftCiJunit.Timestamp = overallJUnitSuites.TestSuites[0].Timestamp
+	} else {
+		openshiftCiJunit.Timestamp = time.Now().Format("2006-01-02T15:04:05")
+	}
+
+	overallJUnitSuites.TestSuites = append(overallJUnitSuites.TestSuites, openshiftCiJunit)
+	overallJUnitSuites.Failures += openshiftCiJunit.Failures
+	overallJUnitSuites.Errors += openshiftCiJunit.Errors
+	overallJUnitSuites.Tests += openshiftCiJunit.Tests
+
+	for i := range overallJUnitSuites.TestSuites {
+		for j := range overallJUnitSuites.TestSuites[i].TestCases {
+			tc := &overallJUnitSuites.TestSuites[i].TestCases[j]
+			if tc.Status == "passed" {
+				tc.SystemErr = ""
+			}
+		}
+	}
+
+	return overallJUnitSuites, nil
 }
 
 func readXMLFile(xmlPath string, result any) error {
