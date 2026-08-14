@@ -1,10 +1,10 @@
 module github.com/konflux-ci/qe-tools
 
-go 1.23.0
+go 1.25
 
 require (
 	cloud.google.com/go/storage v1.38.0
-	github.com/GoogleCloudPlatform/testgrid v0.0.175
+	github.com/GoogleCloudPlatform/testgrid v0.0.176
 	github.com/bsm/ginkgo/v2 v2.12.0
 	github.com/daixiang0/gci v0.13.1
 	github.com/go-critic/go-critic v0.11.1
@@ -159,7 +159,7 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20240205150955-31a09d347014 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240205150955-31a09d347014 // indirect
 	google.golang.org/grpc v1.61.0 // indirect
-	google.golang.org/protobuf v1.33.0 // indirect
+	google.golang.org/protobuf v1.36.3 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
