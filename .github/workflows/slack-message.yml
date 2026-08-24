@@ -9,7 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container: 
-      image: golang:1.22
+      image: golang:1.23
 
     steps:
       - name: Check out code
@@ -18,7 +18,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
-          go-version: '1.22'
+          go-version: '1.23'
 
       - name: Fetch URL Content
         run: |
