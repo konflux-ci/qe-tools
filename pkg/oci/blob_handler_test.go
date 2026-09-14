@@ -259,6 +259,101 @@ func TestExtractGzFile(t *testing.T) {
 	}
 }
 
+func TestExtractGzFile_PathTraversal(t *testing.T) {
+	tests := []struct {
+		name             string
+		gzipName         string
+		expectedBaseName string
+	}{
+		{
+			name:             "Relative path traversal stripped to base",
+			gzipName:         "../../../etc/passwd",
+			expectedBaseName: "passwd",
+		},
+		{
+			name:             "Nested traversal stripped to base",
+			gzipName:         "foo/../../bar/../../../etc/shadow",
+			expectedBaseName: "shadow",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			destDir := filepath.Join(tmpDir, "extracted")
+			if err := os.MkdirAll(destDir, 0o755); err != nil {
+				t.Fatalf("failed to create destination directory: %v", err)
+			}
+
+			gzFilePath := filepath.Join(tmpDir, "malicious.gz")
+			gzFile, err := os.Create(gzFilePath)
+			if err != nil {
+				t.Fatalf("failed to create .gz file: %v", err)
+			}
+			gzWriter := gzip.NewWriter(gzFile)
+			gzWriter.Name = tt.gzipName
+			if _, err := gzWriter.Write([]byte("malicious content")); err != nil {
+				t.Fatalf("failed to write: %v", err)
+			}
+			gzWriter.Close()
+			gzFile.Close()
+
+			controller := &Controller{OutputDir: tmpDir}
+			err = controller.ExtractGzFile(gzFilePath, destDir)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			// filepath.Base strips traversal — file must land inside destDir
+			safePath := filepath.Join(destDir, tt.expectedBaseName)
+			if _, err := os.Stat(safePath); os.IsNotExist(err) {
+				t.Errorf("expected sanitized file at %q, not found", safePath)
+			}
+
+			// Verify no files outside destDir
+			parentEntries, _ := os.ReadDir(tmpDir)
+			for _, e := range parentEntries {
+				if e.Name() != "extracted" && e.Name() != "malicious.gz" {
+					t.Errorf("unexpected file outside destDir: %s", e.Name())
+				}
+			}
+		})
+	}
+}
+
+func TestExtractGzFile_SafeNameSanitized(t *testing.T) {
+	tmpDir := t.TempDir()
+	destDir := filepath.Join(tmpDir, "extracted")
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
+		t.Fatalf("failed to create destination directory: %v", err)
+	}
+
+	gzFilePath := filepath.Join(tmpDir, "test.gz")
+	gzFile, err := os.Create(gzFilePath)
+	if err != nil {
+		t.Fatalf("failed to create .gz file: %v", err)
+	}
+	gzWriter := gzip.NewWriter(gzFile)
+	gzWriter.Name = "subdir/safe-file.txt"
+	if _, err := gzWriter.Write([]byte("safe content")); err != nil {
+		t.Fatalf("failed to write: %v", err)
+	}
+	gzWriter.Close()
+	gzFile.Close()
+
+	controller := &Controller{OutputDir: tmpDir}
+	err = controller.ExtractGzFile(gzFilePath, destDir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// filepath.Base should strip directory component, extracting as "safe-file.txt"
+	extractedPath := filepath.Join(destDir, "safe-file.txt")
+	if _, err := os.Stat(extractedPath); os.IsNotExist(err) {
+		t.Errorf("expected file at %q after name sanitization", extractedPath)
+	}
+}
+
 func TestExtractGzFile_InvalidGzFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	destDir := filepath.Join(tmpDir, "extracted")

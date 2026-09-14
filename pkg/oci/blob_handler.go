@@ -65,21 +65,24 @@ func (c *Controller) ExtractGzFile(gzFilePath, destDir string) error {
 	}
 	defer gzReader.Close()
 
-	outputFileName := gzReader.Name
-	if outputFileName == "" {
+	outputFileName := filepath.Base(gzReader.Name)
+	if outputFileName == "" || outputFileName == "." {
 		outputFileName = strings.TrimSuffix(filepath.Base(gzFilePath), ".gz")
 	}
 
 	outputFilePath := filepath.Join(destDir, outputFileName)
-	// #nosec G304
+	if rel, err := filepath.Rel(destDir, outputFilePath); err != nil || strings.HasPrefix(rel, "..") {
+		return fmt.Errorf("invalid gzip header name %q: path traversal detected", gzReader.Name)
+	}
+
 	outputFile, err := os.Create(outputFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to create output file: %w", err)
 	}
 	defer outputFile.Close()
 
-	// #nosec G110
-	_, err = io.Copy(outputFile, gzReader)
+	const maxDecompressedSize = 1 << 30 // 1 GiB
+	_, err = io.Copy(outputFile, io.LimitReader(gzReader, maxDecompressedSize))
 	if err != nil {
 		// Check for EOF error, and treat it as normal if it occurs.
 		if err == io.EOF {
