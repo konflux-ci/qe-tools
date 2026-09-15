@@ -75,7 +75,7 @@ func (c *Controller) ExtractGzFile(gzFilePath, destDir string) error {
 		return fmt.Errorf("invalid gzip header name %q: path traversal detected", gzReader.Name)
 	}
 
-	outputFile, err := os.Create(outputFilePath)
+	outputFile, err := os.Create(outputFilePath) // #nosec G304 -- path sanitized by filepath.Base and containment check above
 	if err != nil {
 		return fmt.Errorf("failed to create output file: %w", err)
 	}
