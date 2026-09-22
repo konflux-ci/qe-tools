@@ -75,20 +75,29 @@ func (c *Controller) ExtractGzFile(gzFilePath, destDir string) error {
 		return fmt.Errorf("invalid gzip header name %q: path traversal detected", gzReader.Name)
 	}
 
-	outputFile, err := os.Create(outputFilePath) // #nosec G304 -- path sanitized by filepath.Base and containment check above
+	// Refuse to overwrite symlinks to prevent writes outside destDir
+	if info, err := os.Lstat(outputFilePath); err == nil && info.Mode()&os.ModeSymlink != 0 {
+		return fmt.Errorf("refusing to extract over symlink at %q", outputFilePath)
+	}
+
+	outputFile, err := os.OpenFile(outputFilePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644) // #nosec G304 -- path sanitized by filepath.Base and containment check above
 	if err != nil {
 		return fmt.Errorf("failed to create output file: %w", err)
 	}
 	defer outputFile.Close()
 
 	const maxDecompressedSize = 1 << 30 // 1 GiB
-	_, err = io.Copy(outputFile, io.LimitReader(gzReader, maxDecompressedSize))
+	n, err := io.Copy(outputFile, io.LimitReader(gzReader, maxDecompressedSize+1))
 	if err != nil {
-		// Check for EOF error, and treat it as normal if it occurs.
 		if err == io.EOF {
 			return nil
 		}
 		return fmt.Errorf("failed to write decompressed data to file: %w", err)
+	}
+
+	if n > maxDecompressedSize {
+		os.Remove(outputFilePath)
+		return fmt.Errorf("decompressed data exceeds maximum allowed size of %d bytes", maxDecompressedSize)
 	}
 
 	return nil
