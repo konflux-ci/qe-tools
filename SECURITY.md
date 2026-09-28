@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Security Policy
 
 ## Reporting a Vulnerability
@@ -27,3 +28,10 @@ Please include:
 ## Supported Versions
 
 Only the latest release is actively supported with security updates.
+=======
+# Reporting a Security Vulnerability or Incident for Konflux
+
+To report a security vulnerability or incident please follow the instructions here:
+
+<https://github.com/konflux-ci/.github/blob/main/SECURITY.md>
+>>>>>>> main
