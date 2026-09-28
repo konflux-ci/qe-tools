@@ -80,7 +80,7 @@ func (c *Controller) ExtractGzFile(gzFilePath, destDir string) error {
 		return fmt.Errorf("refusing to extract over symlink at %q", outputFilePath)
 	}
 
-	outputFile, err := os.OpenFile(outputFilePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644) // #nosec G304 -- path sanitized by filepath.Base and containment check above
+	outputFile, err := os.OpenFile(outputFilePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600) // #nosec G304 -- path sanitized by filepath.Base and containment check above
 	if err != nil {
 		return fmt.Errorf("failed to create output file: %w", err)
 	}
@@ -96,7 +96,7 @@ func (c *Controller) ExtractGzFile(gzFilePath, destDir string) error {
 	}
 
 	if n > maxDecompressedSize {
-		os.Remove(outputFilePath)
+		_ = os.Remove(outputFilePath)
 		return fmt.Errorf("decompressed data exceeds maximum allowed size of %d bytes", maxDecompressedSize)
 	}
 
