@@ -103,10 +103,13 @@ func (hook *GoWebHook) Send(receiverURL string) (*http.Response, error) {
 		hook.SignatureHeader = DefaultSignatureHeader
 	}
 
+	var transport http.RoundTripper
 	if !hook.IsSecure {
-		// By default do not verify SSL certificate validity
-		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
-			InsecureSkipVerify: true, // #nosec G402
+		transport = &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true, // #nosec G402
+				MinVersion:         tls.VersionTLS12,
+			},
 		}
 	}
 
@@ -118,7 +121,7 @@ func (hook *GoWebHook) Send(receiverURL string) (*http.Response, error) {
 		hook.PreferredMethod = http.MethodPost
 	}
 
-	client := &http.Client{Timeout: 30 * time.Second}
+	client := &http.Client{Timeout: 30 * time.Second, Transport: transport}
 
 	req, err := http.NewRequest(
 		hook.PreferredMethod,

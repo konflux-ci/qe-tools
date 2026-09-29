@@ -7,6 +7,9 @@ name: Validate AGENTS.md line limit
   merge_group:
     types: [checks_requested]
 
+permissions:
+  contents: read
+
 jobs:
   check-line-limit:
     runs-on: ubuntu-24.04
