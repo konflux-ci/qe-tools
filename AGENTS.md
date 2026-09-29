@@ -56,4 +56,4 @@ make pre-commit      # All hooks
 
 - Viper binds lowercase flag names but reads UPPERCASE env vars (e.g., `slack_token` -> `SLACK_TOKEN`)
 - Config files read relative to CWD (container WORKDIR `/qe-tools`); OCI download hardcodes `quay.io/` — other registries rejected
-- Go version mismatch: `go.mod`=1.21, CI=1.22, Dockerfile UBI9 go-toolset varies by tag
+- Go version mismatch: `go.mod`=1.22, CI=1.22, Dockerfile UBI9 go-toolset varies by tag

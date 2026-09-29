@@ -146,4 +146,4 @@ Scans GCS bucket structure for Prow job artifacts. Maps step names to artifact f
 - **Regex match safety**: Functions parsing text with regex should always validate the match result length before accessing capture group indices -- `FindStringSubmatch` returns nil on no match
 - **Fallthrough in match functions**: Functions that iterate over a set of conditions and return on the first match should handle the case where nothing matches
 - **pre-commit hooks run full test suite**: `go-test-mod` in `.pre-commit-config.yaml` runs all tests on every commit, which can be slow
-- **Go version mismatch**: `go.mod` says 1.21, CI uses 1.22, Dockerfile uses UBI9 go-toolset (Go version varies by tag)
+- **Go version mismatch**: `go.mod` says 1.22, CI uses 1.22, Dockerfile uses UBI9 go-toolset (Go version varies by tag)
