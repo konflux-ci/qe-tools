@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/konflux-ci/qe-tools/pkg/types"
 
@@ -25,6 +26,10 @@ import (
 )
 
 const (
+	// healthCheckHTTPTimeout bounds every status-page request so an unresponsive
+	// external service cannot hang the health check indefinitely.
+	healthCheckHTTPTimeout = 30 * time.Second
+
 	healthCheckDefaultConfigPath  = "./config/health-check/config.yaml"
 	healthCheckCmdLongDescription = `This command checks status of external services provided via config.
 The default config is located in ` + healthCheckDefaultConfigPath + `, however user can provide their own config
@@ -88,12 +93,14 @@ var healthCheckCmd = &cobra.Command{
 		hcStatus.ExternalServices = healthCheckConfig.ExternalServices
 		hcStatus.UnhealthyCriticalComponents = make(map[string][]string)
 
+		client := &http.Client{Timeout: healthCheckHTTPTimeout}
 		for i, service := range hcStatus.ExternalServices {
-			r, err := http.Get(service.StatusPageURL)
+			r, err := client.Get(service.StatusPageURL) // #nosec G107 -- URL comes from viper config, not user input
 			if err != nil {
 				return fmt.Errorf("failed to get service %s status page: %+v", service.Name, err)
 			}
 			body, err := io.ReadAll(r.Body)
+			_ = r.Body.Close()
 			if err != nil {
 				return fmt.Errorf("failed to read response body for a service %s: %+v", service.Name, err)
 			}
