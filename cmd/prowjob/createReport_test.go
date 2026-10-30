@@ -106,6 +106,32 @@ func TestBuildJUnitFromArtifacts_FailedStep(t *testing.T) {
 	}
 }
 
+func TestBuildJUnitFromArtifacts_FinishedWithoutPassed(t *testing.T) {
+	scanner := &prow.ArtifactScanner{
+		ArtifactDirectoryPrefix: "logs/test-job/457/",
+		ArtifactStepMap: map[prow.ArtifactStepName]prow.ArtifactFilenameMap{
+			"integration-tests": {
+				"finished.json": prow.Artifact{
+					Content:  `{"timestamp": 1700000000}`,
+					FullName: "logs/test-job/457/integration-tests/finished.json",
+				},
+			},
+		},
+	}
+
+	suites, err := buildJUnitFromArtifacts(scanner)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if suites.Tests != 1 {
+		t.Errorf("expected 1 test, got %d", suites.Tests)
+	}
+	if suites.Failures != 1 {
+		t.Errorf("expected a step without a result to count as a failure, got %d", suites.Failures)
+	}
+}
+
 func TestBuildJUnitFromArtifacts_GatherStep(t *testing.T) {
 	scanner := &prow.ArtifactScanner{
 		ArtifactDirectoryPrefix: "logs/test-job/789/",
