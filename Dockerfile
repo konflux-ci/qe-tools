@@ -13,7 +13,7 @@ COPY cmd/ cmd/
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o qe-tools main.go
 
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.8-1780378819@sha256:2a7e516b217a8e9d18021f40a061f22274d6d677d11e3e368a672827e149050d
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.8-1793862054@sha256:ee7fd2977589d1f776d703e99a03b2ee1c332868bb2b2e2f921c3c1abc55ce9b
 
 LABEL konflux.additional-tags="latest"
 
